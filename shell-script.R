@@ -56,7 +56,8 @@ urls <- c(
   'https://data.milwaukee.gov/dataset/7a8b81f6-d750-4f62-aee8-30ffce1c64ce/resource/0a12bdda-f080-4e98-99ea-52ef13466579/download/2017-property-sales-data.csv',
   'https://data.milwaukee.gov/dataset/7a8b81f6-d750-4f62-aee8-30ffce1c64ce/resource/1e7c4ef4-d12f-4d82-9029-f5622151b51b/download/2018-property-sales-data.csv',
   'https://data.milwaukee.gov/dataset/7a8b81f6-d750-4f62-aee8-30ffce1c64ce/resource/7c2f3357-8380-4cd7-9b50-67b0e554ff7d/download/2019-property-sales-data.csv',
-  'https://data.milwaukee.gov/dataset/7a8b81f6-d750-4f62-aee8-30ffce1c64ce/resource/5ad3b44d-ba65-47eb-bd08-3f6cd07bf597/download/property-sales-data-2020.csv'
+  'https://data.milwaukee.gov/dataset/7a8b81f6-d750-4f62-aee8-30ffce1c64ce/resource/5ad3b44d-ba65-47eb-bd08-3f6cd07bf597/download/property-sales-data-2020.csv',
+  'https://data.milwaukee.gov/dataset/7a8b81f6-d750-4f62-aee8-30ffce1c64ce/resource/31f81cfe-b34f-496b-9361-2025514920cb/download/armslengthsales_2021_valid.csv'
 )
 
 annual_sales_data <- list()
@@ -86,7 +87,7 @@ for (i in 1:length(urls)){
   colnames(tmp_data)[17] <- 'lot_size'
   colnames(tmp_data)[18] <- 'sale_date'
   colnames(tmp_data)[19] <- 'sale_price'
-          
+  
   annual_sales_data[[length(annual_sales_data) + 1]] <- tmp_data
   
   print(i)
@@ -99,7 +100,11 @@ annual_sales_data <- annual_sales_data %>%
                      mutate(char_num = nchar(as.character(sale_date)),
                             slash_ind = grepl(pattern = '/', x = sale_date),
                             sale_date = ifelse(char_num == 7,as.character(paste(sale_date,'-01',sep='')),as.character(as.Date(sale_date,format = "%m/%d/%Y"))),
-                            sale_date = as.Date(sale_date)) %>%
+                            sale_date = as.Date(sale_date),
+                            sale_price = gsub(pattern = '\\$', replacement = '', x = as.character(sale_price)),
+                            sale_price = gsub(pattern = ',', replacement = '', x = as.character(sale_price)),
+                            finished_square_feet = gsub(pattern = ',', replacement = '', x = as.character(finished_square_feet)),
+                            lot_size = gsub(pattern = ',', replacement = '', x = as.character(lot_size))) %>%
                      select(-c(char_num,slash_ind))
 
 ### write data do MySQL database
@@ -107,5 +112,6 @@ dbWriteTable(conn = database_connection,
              name = 'mke_property_sales',
              value = annual_sales_data,
              append = FALSE,
+             overwrite = TRUE,
              row.names = FALSE)
   
